@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>古代魚診断 〜太古の海からの伝言〜</title>
+<style>
+  :root {
+    --deep1: #02101f;
+    --deep2: #03203a;
+    --deep3: #053a5e;
+    --accent: #2a9fd6;
+    --accent2: #5fd0e8;
+    --amber: #d9a441;
+    --text: #e8f4fb;
+    --muted: #9bbdd2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(42,159,214,0.25), transparent 60%),
+      linear-gradient(180deg, var(--deep2) 0%, var(--deep1) 70%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ゆらめく光の粒（太古の海のプランクトン） */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(2px 2px at 20% 30%, rgba(95,208,232,0.6), transparent),
+      radial-gradient(2px 2px at 70% 60%, rgba(95,208,232,0.4), transparent),
+      radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1.5px 1.5px at 85% 20%, rgba(95,208,232,0.5), transparent),
+      radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,0.4), transparent);
+    pointer-events: none;
+    animation: drift 12s ease-in-out infinite alternate;
+    z-index: 0;
+  }
+  @keyframes drift {
+    from { transform: translateY(0) translateX(0); }
+    to   { transform: translateY(-20px) translateX(15px); }
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+    background: rgba(3, 26, 46, 0.72);
+    border: 1px solid rgba(95,208,232,0.25);
+    border-radius: 22px;
+    padding: 36px 26px 42px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+    backdrop-filter: blur(4px);
+  }
+
+  .screen { display: none; animation: fadeIn 0.6s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* タイトル画面 */
+  .emblem {
+    font-size: 64px;
+    text-align: center;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 0 14px rgba(95,208,232,0.5));
+    animation: bob 4s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-8px); }
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 25px;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+    color: #fff;
+    text-shadow: 0 0 18px rgba(42,159,214,0.6);
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: var(--amber);
+    letter-spacing: 0.18em;
+    margin-bottom: 26px;
+  }
+  .lead {
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.9;
+    color: var(--muted);
+    margin-bottom: 30px;
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    font-family: inherit;
+    letter-spacing: 0.1em;
+    color: #021726;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 8px 24px rgba(42,159,214,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(42,159,214,0.55); }
+  .btn:active { transform: translateY(0); }
+
+  /* 質問画面 */
+  .progress {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    margin-bottom: 14px;
+  }
+  .progress-bar {
+    height: 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.5s ease;
+  }
+  .question {
+    font-size: 19px;
+    line-height: 1.6;
+    text-align: center;
+    margin-bottom: 26px;
+    color: #fff;
+    min-height: 58px;
+  }
+  .options { display: flex; flex-direction: column; gap: 13px; }
+  .option {
+    padding: 15px 18px;
+    font-size: 15px;
+    font-family: inherit;
+    text-align: left;
+    color: var(--text);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(95,208,232,0.22);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.18s;
+    line-height: 1.5;
+  }
+  .option:hover {
+    background: rgba(42,159,214,0.25);
+    border-color: var(--accent2);
+    transform: translateX(4px);
+  }
+
+  /* 結果画面 */
+  .result-fish {
+    font-size: 88px;
+    text-align: center;
+    margin: 8px 0 4px;
+    filter: drop-shadow(0 0 22px rgba(95,208,232,0.6));
+    animation: bob 4s ease-in-out infinite;
+  }
+  .result-label {
+    text-align: center;
+    font-size: 12px;
+    color: var(--amber);
+    letter-spacing: 0.25em;
+    margin-bottom: 4px;
+  }
+  .result-name {
+    text-align: center;
+    font-size: 30px;
+    color: #fff;
+    margin-bottom: 18px;
+    text-shadow: 0 0 20px rgba(42,159,214,0.6);
+  }
+  .result-desc {
+    font-size: 15px;
+    line-height: 2;
+    color: var(--text);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(95,208,232,0.2);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .result-msg {
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 28px;
+    font-style: italic;
+  }
+  .btn-retry {
+    background: linear-gradient(135deg, var(--amber), #b8822c);
+    color: #1a1003;
+    box-shadow: 0 8px 24px rgba(217,164,65,0.35);
+  }
+  .btn-retry:hover { box-shadow: 0 12px 30px rgba(217,164,65,0.5); }
+
+  .credit {
+    text-align: center;
+    font-size: 10px;
+    color: rgba(155,189,210,0.5);
+    letter-spacing: 0.1em;
+    margin-top: 22px;
+  }
+
+  /* プログレス画面 */
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 350px;
+    gap: 30px;
+  }
+  .loading-title {
+    font-size: 24px;
+    color: #fff;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .loading-animation {
+    position: relative;
+    width: 80px;
+    height: 80px;
+  }
+  .particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(circle, var(--accent2), var(--accent));
+    border-radius: 50%;
+    animation: orbit 3s linear infinite;
+    box-shadow: 0 0 10px rgba(95,208,232,0.8);
+  }
+  .particle:nth-child(1) { animation: orbit 3s linear infinite 0s; }
+  .particle:nth-child(2) { animation: orbit 3s linear infinite 1s; }
+  .particle:nth-child(3) { animation: orbit 3s linear infinite 2s; }
+
+  @keyframes orbit {
+    0% {
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) rotate(0deg) translateX(40px);
+      opacity: 1;
+    }
+    100% {
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) rotate(360deg) translateX(40px);
+      opacity: 1;
+    }
+  }
+
+  .loading-text {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.08em;
+  }
+  .loading-progress {
+    width: 180px;
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .loading-progress-bar {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    animation: progressLoad 5s ease-in-out forwards;
+  }
+  @keyframes progressLoad {
+    0% { width: 0%; }
+    50% { width: 70%; }
+    100% { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- タイトル画面 -->
+  <section id="screen-title" class="screen active">
+    <div class="emblem">🐟</div>
+    <h1>古代魚診断</h1>
+    <div class="subtitle">〜 太古の海からの伝言 〜</div>
+    <p class="lead">
+      何億年もの時を生きぬいた、6種の古代魚。<br>
+      4つの問いに答えるとき、<br>
+      太古の海があなたの内なる魚を映し出す。
+    </p>
+    <button class="btn" onclick="startQuiz()">診断スタート</button>
+    <div class="credit">深海ロマン占い</div>
+  </section>
+
+  <!-- プログレス画面 -->
+  <section id="screen-loading" class="screen">
+    <div class="loading-container">
+      <div class="loading-title">太古の海を感じて…</div>
+      <div class="loading-animation">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+      </div>
+      <div class="loading-progress">
+        <div class="loading-progress-bar"></div>
+      </div>
+      <div class="loading-text">あなたの魚を探索中</div>
+    </div>
+  </section>
+
+  <!-- 質問画面 -->
+  <section id="screen-quiz" class="screen">
+    <div class="progress" id="progressText">第 1 問 / 全 4 問</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="question" id="questionText"></div>
+    <div class="options" id="optionsBox"></div>
+  </section>
+
+  <!-- 結果画面 -->
+  <section id="screen-result" class="screen">
+    <div class="result-label">あなたの古代魚は…</div>
+    <div class="result-fish" id="resultFish"></div>
+    <div class="result-name" id="resultName"></div>
+    <div class="result-desc" id="resultDesc"></div>
+    <div class="result-msg" id="resultMsg"></div>
+    <button class="btn btn-retry" onclick="restart()">もう一度診断する</button>
+    <div class="credit">古代魚診断 〜太古の海からの伝言〜</div>
+  </section>
+
+</div>
+
+<script>
+  // ===== キャラクター（古代魚）データ =====
+  // 各魚に固有のキー（1〜6）を割り当て、選択肢の点数で集計する
+  const FISH = {
+    1: {
+      emoji: "🐟",
+      name: "シーラカンス",
+      desc: "動じない大物。マイペースで芯が強いあなた。",
+      msg: "深海でただ静かに、何億年も己を貫いてきた生きた化石。流行に流されず、自分の時間を大切にするあなたは、まわりに本物の安心感を与える存在です。"
+    },
+    2: {
+      emoji: "🦈",
+      name: "チョウザメ",
+      desc: "上品で気高い。こだわり派の努力家なあなた。",
+      msg: "黄金の卵を抱く高貴な魚。一つひとつを丁寧に積み上げる職人気質で、妥協を許さない美意識の持ち主。あなたの努力は、やがて宝のように輝きます。"
+    },
+    3: {
+      emoji: "🐠",
+      name: "ピラルク",
+      desc: "おおらかでスケールが大きい。リーダー気質なあなた。",
+      msg: "アマゾンに泳ぐ世界最大級の淡水魚。器が大きく、細かいことにこだわらないあなたのまわりには、自然と人が集まります。大海を導く頼れる存在です。"
+    },
+    4: {
+      emoji: "🐉",
+      name: "アロワナ",
+      desc: "華やかで存在感抜群。プライドが高いあなた。",
+      msg: "“水中の龍”と呼ばれる気高き魚。どこにいても一際輝き、人を惹きつけるカリスマ。高い理想と誇りを胸に、あなたは堂々と自分の道を進みます。"
+    },
+    5: {
+      emoji: "🐊",
+      name: "ガーパイク",
+      desc: "クールで一匹狼。鋭い直感の持ち主なあなた。",
+      msg: "鋭い顎を持つ古代のハンター。群れずに己の感覚を信じて動く一匹狼。冷静な観察眼と直感で、誰も気づかない真実を射抜くタイプです。"
+    },
+    6: {
+      emoji: "🐍",
+      name: "ポリプテルス",
+      desc: "神秘的でミステリアス。隠れた才能の持ち主なあなた。",
+      msg: "古代の姿を残す“恐竜魚”。一見おとなしげでも、内に秘めた才能は計り知れません。多くを語らないあなたには、まだ目覚めぬ可能性が眠っています。"
+    }
+  };
+
+  // ===== 質問データ =====
+  // 各選択肢は、対応する魚キーに +1 点を入れる
+  const QUESTIONS = [
+    {
+      q: "休日の過ごし方は？",
+      options: [
+        { text: "家でゆっくりマイペースに", score: 1 },
+        { text: "趣味やこだわりに没頭する", score: 2 },
+        { text: "友達や仲間とワイワイ",     score: 3 },
+        { text: "一人で気ままに出かける",   score: 5 }
+      ]
+    },
+    {
+      q: "仲間内でのあなたは？",
+      options: [
+        { text: "どっしり頼られる存在",       score: 1 },
+        { text: "物事をきっちり進める人",     score: 2 },
+        { text: "みんなを引っ張るリーダー",   score: 3 },
+        { text: "クールに一歩引いて見る人",   score: 5 }
+      ]
+    },
+    {
+      q: "大事にしているものは？",
+      options: [
+        { text: "自分のペースと安心感", score: 1 },
+        { text: "品質とこだわり",       score: 2 },
+        { text: "仲間とのつながり",     score: 4 },
+        { text: "自分だけの世界観",     score: 6 }
+      ]
+    },
+    {
+      q: "初めての挑戦、あなたは？",
+      options: [
+        { text: "じっくり様子を見てから", score: 1 },
+        { text: "計画を立ててから動く",   score: 2 },
+        { text: "ノリと勢いで飛び込む",   score: 4 },
+        { text: "直感を信じて即決断",     score: 5 }
+      ]
+    }
+  ];
+
+  // ===== 状態 =====
+  let current = 0;
+  let scores = {};
+  let audioContext = null;
+
+  // ===== 効果音 =====
+  function initAudio() {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+
+  function playStartSound() {
+    if (!audioContext) return;
+    const now = audioContext.currentTime;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+    osc.start(now);
+    osc.stop(now + 0.15);
+  }
+
+  function playSelectSound() {
+    if (!audioContext) return;
+    const now = audioContext.currentTime;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+    osc.start(now);
+    osc.stop(now + 0.1);
+  }
+
+  function playFinishSound() {
+    if (!audioContext) return;
+    const now = audioContext.currentTime;
+
+    for (let i = 0; i < 3; i++) {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+
+      const freq = 600 + (i * 200);
+      osc.frequency.setValueAtTime(freq, now + (i * 0.1));
+      gain.gain.setValueAtTime(0.2, now + (i * 0.1));
+      gain.gain.exponentialRampToValueAtTime(0.01, now + (i * 0.1) + 0.2);
+
+      osc.start(now + (i * 0.1));
+      osc.stop(now + (i * 0.1) + 0.2);
+    }
+  }
+
+  function show(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  function startQuiz() {
+    initAudio();
+    playStartSound();
+    current = 0;
+    scores = {1:0,2:0,3:0,4:0,5:0,6:0};
+    show("screen-loading");
+
+    setTimeout(() => {
+      show("screen-quiz");
+      renderQuestion();
+    }, 5000);
+  }
+
+  function renderQuestion() {
+    const total = QUESTIONS.length;
+    const item = QUESTIONS[current];
+    document.getElementById("progressText").textContent =
+      "第 " + (current + 1) + " 問 / 全 " + total + " 問";
+    document.getElementById("progressFill").style.width =
+      ((current) / total * 100) + "%";
+    document.getElementById("questionText").textContent = item.q;
+
+    const box = document.getElementById("optionsBox");
+    box.innerHTML = "";
+    item.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "option";
+      btn.textContent = opt.text;
+      btn.onclick = () => choose(opt.score);
+      box.appendChild(btn);
+    });
+  }
+
+  function choose(fishKey) {
+    playSelectSound();
+    scores[fishKey] = (scores[fishKey] || 0) + 1;
+    current++;
+    if (current < QUESTIONS.length) {
+      renderQuestion();
+    } else {
+      document.getElementById("progressFill").style.width = "100%";
+      showResult();
+    }
+  }
+
+  function showResult() {
+    playFinishSound();
+    // 最高得点の魚を選ぶ。同点なら回答順で先のものを優先
+    let bestKey = 1, bestScore = -1;
+    for (let k = 1; k <= 6; k++) {
+      if (scores[k] > bestScore) { bestScore = scores[k]; bestKey = k; }
+    }
+    const fish = FISH[bestKey];
+    document.getElementById("resultFish").textContent = fish.emoji;
+    document.getElementById("resultName").textContent = fish.name;
+    document.getElementById("resultDesc").textContent = fish.desc;
+    document.getElementById("resultMsg").textContent = fish.msg;
+    show("screen-result");
+  }
+
+  function restart() {
+    show("screen-title");
+  }
+</script>
+</body>
+</html>
